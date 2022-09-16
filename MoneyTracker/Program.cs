@@ -1,6 +1,9 @@
 ﻿using MoneyTracker;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 
 /*
@@ -31,9 +34,11 @@ using System.Runtime.InteropServices;
  *      - Load and save items list to file 
  *    The solution may also include other creative features at your discretion in case you wish to show some flair. 
  *    
+ *    X Disallow empty titles on transactions
+ *    
  *    TODO:
  *      - Testing
- *      - Disallow empty titles on transations
+ *      
  *    
  */
 
@@ -41,101 +46,179 @@ using System.Runtime.InteropServices;
 // Initiate List of transactions
 List<Transaction> transactions = new List<Transaction>();
 
+// Welcome greeting
+Console.WriteLine();
+Console.ForegroundColor = ConsoleColor.DarkBlue;
+Console.WriteLine("                   ***    Welcome to TrackMoney    ***                   ");
+Console.ResetColor();
+Console.WriteLine();
+
 Main(transactions);
 
 static void Main(List<Transaction> transactions)
 {
-    
-
-    // Greeting to user with account balance and instructions
-    Console.WriteLine("Welcome to TrackMoney");
-    Console.WriteLine($"You currently have {Balance(transactions)} SEK on your account.");
+    // Print account balance and instructions
+    Console.WriteLine("--------------------------------------------------------------------------");
+    Console.WriteLine();
+    Console.Write("You currently have ");
+    Console.ForegroundColor = ConsoleColor.DarkBlue;
+    Console.Write($"{Balance(transactions)}");
+    Console.ResetColor();
+    Console.Write(" SEK on your account.");
+    Console.WriteLine();
+    Console.WriteLine();
     Console.WriteLine("Pick an option:");
+    Console.WriteLine();
     Console.WriteLine("(1) Show items (All/Expenses/Incomes)");
     Console.WriteLine("(2) Add New Expense/Income");
     Console.WriteLine("(3) Edit Item (edit, remove)");
     Console.WriteLine("(4) Save and Quit");
+    Console.WriteLine();
 
     string option = Console.ReadLine();
 
+    // Menu options calling appropriate method
     switch (option)
     {
         case "1":
+            Console.WriteLine();
             Console.WriteLine("Choose which items You would like to display:");
+            Console.WriteLine();
             Console.WriteLine("(1) All");
             Console.WriteLine("(2) Expense(s)");
             Console.WriteLine("(3) Income(s)");
             Console.WriteLine("(4) Return to Main Menu");
+            Console.WriteLine();
 
             string showOption = Console.ReadLine();
             switch (showOption)
             {
                 case "1":
                     ShowItems(transactions, "all");
+                    Main(transactions);
                     break;
                 case "2":
                     ShowItems(transactions, "expenses");
+                    Main(transactions);
                     break;
                 case "3":
                     ShowItems(transactions, "incomes");
+                    Main(transactions);
                     break;
                 case "4":                    
+                    break;
+                default:
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Wrong input");
+                    Console.ResetColor();
+                    Console.WriteLine();
+                    Main(transactions);
                     break;
             }
             break;
         case "2":
+            Console.WriteLine();
             Console.WriteLine("Choose what You would like to add:");
+            Console.WriteLine();
             Console.WriteLine("(1) Expense");
             Console.WriteLine("(2) Income");
             Console.WriteLine("(3) Return to Main Menu");
+            Console.WriteLine();
 
             string addOption = Console.ReadLine();
             switch (addOption)
             {
                 case "1":
                     AddNew(transactions, "expense");
+                    Main(transactions);
                     break;
                 case "2":
                     AddNew(transactions, "income");
+                    Main(transactions);
                     break;
                 case "3":
+                    Main(transactions);
+                    break;
+                default:
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Wrong input");
+                    Console.ResetColor();
+                    Console.WriteLine();
+                    Main(transactions);
                     break;
             }
             break;
         case "3":
+            Console.WriteLine();
             Console.WriteLine("Choose what You would like to do:");
+            Console.WriteLine();
             Console.WriteLine("(1) Edit");
             Console.WriteLine("(2) Remove");
             Console.WriteLine("(3) Return to Main Menu");
+            Console.WriteLine();
 
             string editOption = Console.ReadLine();
             switch (editOption)
             {
                 case "1":
                     EditItem(transactions, "edit");
+                    Main(transactions);
                     break;
                 case "2":
                     EditItem(transactions, "remove");
+                    Main(transactions);
                     break;
                 case "3":
+                    Main(transactions);
+                    break;
+                default:
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Wrong input");
+                    Console.ResetColor();
+                    Console.WriteLine();
                     Main(transactions);
                     break;
             }
             break;
         case "4":
+            Main(transactions);
+            break;
+        default:
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Wrong input");
+            Console.ResetColor();
+            Console.WriteLine();
+            Main(transactions);
             break;
     }
 }
 
+// Method to print transactions
 static void ShowItems(List<Transaction> transactions, string items)
 {
-    if (items == "all")
+    int tCount = 0;
+
+    if (transactions.Count() < 1)
     {
-        Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("EXPENSES");
         Console.WriteLine();
-        Console.WriteLine("Title:".PadRight(30) + "Type:".PadRight(30) + "Value:");
+        Console.WriteLine(" --- No transactions to display ---");
+        Console.WriteLine();
+    }
+
+    // Print all transactions
+    else if (items == "all")
+    {
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("--- ALL TRANSACTIONS ---".PadLeft(50));
+        Console.WriteLine("--------------------------------------------------------------------------");
+        Console.WriteLine("#:".PadLeft(10) + " - " + "Title:".PadRight(20) + "Type:".PadRight(20) + "Value:");
         Console.ResetColor();
+        Console.WriteLine();
 
         // Check each transaction's type and print appropriate data to table
         foreach (Transaction t in transactions)
@@ -147,7 +230,7 @@ static void ShowItems(List<Transaction> transactions, string items)
                 string value = (t.Value * -1).ToString();
 
                 // Print expense
-                Console.WriteLine(t.Title.PadRight(30) + "EXPENSE".PadRight(30) + value + " SEK");
+                Console.WriteLine(tCount.ToString().PadLeft(10) + " - " + t.Title.PadRight(20) + "EXPENSE".PadRight(20) + value + " SEK");
             }
 
             // Check if transation's type is income
@@ -157,74 +240,156 @@ static void ShowItems(List<Transaction> transactions, string items)
                 string value = t.Value.ToString();
 
                 // Print income
-                Console.WriteLine(t.Title.PadRight(30) + "INCOME".PadRight(30) + value + " SEK");
+                Console.WriteLine(tCount.ToString().PadLeft(10) + " - " + t.Title.PadRight(20) + "INCOME".PadRight(20) + value + " SEK");
             }
+            tCount++;
         }
     }
 
     // Print expenses in a table
     else if (items == "expenses")
     {
-        Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("EXPENSES");
-        Console.WriteLine();
-        Console.WriteLine("Title:".PadRight(30) + "Value:");
-        Console.ResetColor();
-        foreach (Expense e in transactions)
+        // Check if there are expenses in list
+        bool empty = true;
+        foreach (Transaction t in transactions)
         {
-            // Convert the expenses value to negative and to string
-            string value = (e.Value * -1).ToString();
-            
-            // Print expense
-            Console.WriteLine(e.Title.PadRight(30) + value + " SEK");
+            if (t.GetType() == typeof(Expense))
+            {
+                empty = false;
+            }
+        }
+
+        // Print incomes if they exist
+        if (empty == false)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine("--- EXPENSES ---".PadLeft(50));
+            Console.WriteLine("--------------------------------------------------------------------------");
+            Console.WriteLine("#:".PadLeft(10) + " - " + "Title:".PadRight(20) + "Value:");
+            Console.ResetColor();
+            Console.WriteLine();
+
+            // Check each transaction's type and print appropriate data to table
+            foreach (Transaction t in transactions)
+            {
+                // Check if transation's type is expense
+                if (t.GetType() == typeof(Expense))
+                {
+                    // Convert the expense's value to negative and to string
+                    string value = (t.Value * -1).ToString();
+
+                    // Print expense
+                    Console.WriteLine(tCount.ToString().PadLeft(10) + " - " + t.Title.PadRight(20) + value + " SEK");
+                }
+                tCount++;
+            }
+        }
+        
+        // Print message if there are no expenses
+        else
+        {
+            Console.WriteLine();
+            Console.WriteLine(" --- No expenses to display ---");
+            Console.WriteLine();
+
         }
     }
+
+    // Print incomes in a table
     else if (items == "incomes")
     {
-        Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("INCOMES");
-        Console.WriteLine();
-        Console.WriteLine("Title:".PadRight(30) + "Value:");
-        Console.ResetColor();
-        foreach (Income i in transactions)
+        // Check if there are incomes in list
+        bool empty = true;
+        foreach (Transaction t in transactions)
         {
-            // Convert the incomes value to string
-            string value = i.Value.ToString();
+            if (t.GetType() == typeof(Income))
+            {
+                empty = false;
+            }
+        }
 
-            // Print income
-            Console.WriteLine(i.Title.PadRight(30) + value + " SEK");
+        // Print incomes if they exist
+        if (empty == false)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine("--- INCOMES ---".PadLeft(50));
+            Console.WriteLine("--------------------------------------------------------------------------");
+            Console.WriteLine("#:".PadLeft(10) + " - " + "Title:".PadRight(20) + "Value:");
+            Console.ResetColor();
+            Console.WriteLine();
+
+            foreach (Transaction t in transactions)
+            {
+                if (t.GetType() == typeof(Income))
+                {
+                    // Convert the income's value to string
+                    string value = t.Value.ToString();
+
+                    // Print income
+                    Console.WriteLine(tCount.ToString().PadLeft(10) + " - " + t.Title.PadRight(20) + value + " SEK");
+                }
+                tCount++;
+            }
+        }
+
+        // Print message if there are no incomes
+        else
+        {
+            Console.WriteLine();
+            Console.WriteLine(" --- No incomes to display ---");
+            Console.WriteLine();
+
         }
     }
-    
+    Console.WriteLine();
 }
 
+// Method to display account balance
 static int Balance(List<Transaction> transactions)
 {
     int incomes = 0;
     int expenses = 0;
 
-    // Subtract each expense 
-    foreach (Expense expense in transactions)
+    // Return 0 if there are no transactions
+    if (transactions.Count() < 1)
     {
-        expenses -= expense.Value;
+        return 0;
     }
-
-    // Add each income
-    foreach (Income income in transactions)
+    
+    // Check type of each transaction in list
+    for (int i = 0; i < transactions.Count(); i++)
     {
-        incomes += income.Value;
+        // Subtract each expense 
+        if (transactions[i] is Expense)
+        {
+            expenses += transactions[i].Value;
+        }
+
+        // Add each income
+        else if (transactions[i] is Income)
+        {
+            incomes += transactions[i].Value;
+        }
     }
     
     // Subtract expenses from incomes and return result
     return incomes - expenses;
 }
 
+// Method to add new transactions
 static void AddNew(List<Transaction> transactions, string type)
 {
     // Prompt user for title and amount of the transaction
+    Console.WriteLine();
     Console.WriteLine($"Enter a title for this {type}:");
+    Console.WriteLine();
+
     string title = Console.ReadLine();
+
+    Console.WriteLine();
     Console.WriteLine($"Enter the amount of this {type}:");
+    Console.WriteLine();
+
     string sValue = Console.ReadLine();
 
     // Attempt to convert the amount inputted by the user from string to int
@@ -237,128 +402,161 @@ static void AddNew(List<Transaction> transactions, string type)
         {
             value = value * -1;
         }
-
-        // Check if transaction is an expense or income
-        if (type == "expense")
+        
+        // Make sure title is not empty
+        if (title.Trim() != "")
         {
-            // Add expense to transactions list
-            transactions.Add(new Expense(title, value));
+            // Check if transaction is an expense or income
+            if (type == "expense")
+            {
+                // Add expense to transactions list
+                transactions.Add(new Expense(title, value));
+            }
+            else if (type == "income")
+            {
+                // Add income to transactions list
+                transactions.Add(new Income(title, value));
+            }
         }
-        else if (type == "income")
+
+        // Print error if title is empty
+        else
         {
-            // Add income to transactions list
-            transactions.Add(new Income(title, value));
-        } 
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Wrong input, you must enter a title");
+            Console.ResetColor();
+            Console.WriteLine();
+        }        
     }
 
     // Catch if number is to big for int and print error
     catch (OverflowException)
     {
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine("The amount is to big, must be of type Integer.");
+        Console.ResetColor();
+        Console.WriteLine();
     }
 
     // Catch remaining errors and provide correct usage instuctions
     catch (Exception ex)
     {
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine("The amount must be a positive number of the type Integer");
+        Console.ResetColor();
+        Console.WriteLine();
     }
 }
 
+// Method to edit or delete transactions
 static void EditItem(List<Transaction> transactions, string action)
 {
-    Console.Write($"Enter the title of the transaction you would like to {action} (or enter 'S' or 'SHOW' in order to view all transactions): ");
+    // Print list of transations
+    ShowItems(transactions, "all");
+
+    Console.WriteLine();
+    Console.Write($"Enter the number corresponding to the transaction you would like to {action}:");
+    Console.WriteLine();
+
     string input = Console.ReadLine();
 
-    if (input.ToLower().Trim() == "s" || input.ToLower().Trim() == "show")
+    try
     {
-        ShowItems(transactions, "all");
-    }
+        // Point to user-selected transaction
+        Transaction selectedItem = transactions[int.Parse(input)];
+        
+        // Edit transaction
+        if (action == "edit")
+        {
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine($"Are you sure you would like to edit {selectedItem.Title}?");            
+            Console.WriteLine("Enter 'Y' or 'YES' to confirm");
+            Console.ResetColor();
+            Console.WriteLine();
 
-    Transaction selectedItem = (Transaction)(from t in transactions where t.Title.ToLower() == input.ToLower() select t);
-
-    if (action == "edit")
-    {
-        Console.WriteLine($"Are you sure you would like to edit {selectedItem.Title}?");
-        Console.WriteLine("Enter 'Y' or 'YES' to confirm");
-        string confirm = Console.ReadLine();
-        if (confirm == "y".ToLower().Trim() || confirm == "yes".ToLower().Trim())
-        {                          
-            Console.WriteLine("Enter the new title for transaction:");
-            string title = Console.ReadLine();
-
-            // Update the selected item's title
-            selectedItem.Title = title;
-
-            Console.WriteLine("Enter the new amount of the transaction (must be positve number):");
-            string sValue = Console.ReadLine();
-
-            // Attempt to convert the amount inputted by the user from string to int
-            try
+            string confirm = Console.ReadLine();
+            if (confirm == "y".ToLower().Trim() || confirm == "yes".ToLower().Trim())
             {
-                int value = Convert.ToInt32(sValue);
+                Console.WriteLine();
+                Console.WriteLine("Enter the new title for transaction:");
+                Console.WriteLine();
+                string title = Console.ReadLine();
 
-                // Convert value from negative to positive if needed
-                if (value < 0)
+                // Update the selected item's title
+                selectedItem.Title = title;
+
+                Console.WriteLine();
+                Console.WriteLine("Enter the new amount of the transaction (must be positve number):");
+                Console.WriteLine();
+                string sValue = Console.ReadLine();
+
+                // Attempt to convert the amount inputted by the user from string to int
+                try
                 {
-                    value = value * -1;
+                    int value = Convert.ToInt32(sValue);
+
+                    // Convert value from negative to positive if needed
+                    if (value < 0)
+                    {
+                        value = value * -1;
+                    }
+
+                    // Update the selected item's value
+                    selectedItem.Value = value;
                 }
 
-                // Update the selected item's value
-                selectedItem.Value = value;
-                    
-            }
-
-            // Catch if number is to big for int and print error
-            catch (OverflowException)
-            {
-                Console.WriteLine("The amount is to big, must be of type Integer.");
-            }
-
-            // Catch remaining errors and provide correct usage instuctions
-            catch (Exception ex)
-            {
-                Console.WriteLine("The amount must be a positive number of the type Integer");
-            }
-        }
-    }
-    else if (action == "remove")
-    {
-        Console.WriteLine($"Are you sure you would like to remove {selectedItem.Title}?");
-        Console.WriteLine("Enter 'Y' or 'YES' to confirm");
-        string confirm = Console.ReadLine();
-        if (confirm == "y".ToLower().Trim() || confirm == "yes".ToLower().Trim())
-        {
-            transactions.Remove(selectedItem);
-        }
-    }
-
-    foreach (Transaction t in transactions)
-    {
-        if (input.ToLower() == t.Title.ToLower())
-        {
-            if (action == "edit")
-            {
-                Console.WriteLine($"Are you sure you would like to edit {t.Title}?");
-                Console.WriteLine("Enter 'Y' or 'YES' to confirm");
-                string confirm = Console.ReadLine();
-                if (confirm == "y".ToLower().Trim() || confirm == "yes".ToLower().Trim())
+                // Catch if number is to big for int and print error
+                catch (OverflowException)
                 {
-                    
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("The amount is to big, must be of type Integer.");
+                    Console.ResetColor();
+                    Console.WriteLine();
                 }
 
-                
-            }
-            else if (action == "remove")
-            {
-                Console.WriteLine($"Are you sure you would like to remove {t.Title}?");
-                Console.WriteLine("Enter 'Y' or 'YES' to confirm");
-                string confirm = Console.ReadLine();
-                if (confirm == "y".ToLower().Trim() || confirm == "yes".ToLower().Trim())
+                // Catch remaining errors and provide correct usage instuctions
+                catch (Exception ex)
                 {
-                    transactions.Remove(t);
-                }                
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("The amount must be a positive number of the type Integer");
+                    Console.ResetColor();
+                    Console.WriteLine();
+                }
+            }
+        }
+
+        // Remove transaction
+        else if (action == "remove")
+        {
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine($"Are you sure you would like to remove {selectedItem.Title}?");
+            Console.WriteLine("Enter 'Y' or 'YES' to confirm");
+            Console.ResetColor();
+            Console.WriteLine();
+
+            string confirm = Console.ReadLine();
+
+            if (confirm == "y".ToLower().Trim() || confirm == "yes".ToLower().Trim())
+            {
+                transactions.Remove(selectedItem);
             }
         }
     }
+    catch
+    {
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("Wrong input, the number you entered does not correspond to any transaction");
+        Console.ResetColor();
+        Console.WriteLine();
+        return;
+    }    
 }
 
