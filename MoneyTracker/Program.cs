@@ -38,6 +38,9 @@ using System.Runtime.Serialization;
  *    
  *    TODO:
  *      - Testing
+ *      - Fix bugs:
+ *          - Edit/Remove not working (Fault probably with confirm)
+ *          - Exit program not working
  *      
  *    
  */
