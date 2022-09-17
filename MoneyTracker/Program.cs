@@ -531,7 +531,7 @@ static void EditItem(List<Transaction> transactions, string action)
             }
         }
 
-        // Remove transaction
+        // Confirm and remove transaction
         else if (action == "remove")
         {
             Console.WriteLine();
@@ -549,11 +549,13 @@ static void EditItem(List<Transaction> transactions, string action)
             }
         }
     }
+
+    // Print error if input is wrong
     catch
     {
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine("Wrong input, the number you entered does not correspond to any transaction");
+        Console.WriteLine("Wrong input, your input does not correspond to any transaction");
         Console.ResetColor();
         Console.WriteLine();
         return;
