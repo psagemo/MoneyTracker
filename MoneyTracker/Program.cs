@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.IO;
+using System.Text.Json;
 
 
 /*
@@ -37,11 +39,14 @@ using System.Runtime.Serialization;
  *    X Disallow empty titles on transactions
  *    
  *    TODO:
+ *    
  *      - Testing
+ *      
  *      - Fix bugs:
  *          - Edit/Remove not working (Fault probably with confirm)
  *          - Exit program not working
  *      
+ *      - Save to file "They can also quit and save the current task list to file, and then restart the application with the former state restored." 
  *    
  */
 
@@ -110,6 +115,7 @@ static void Main(List<Transaction> transactions)
                     break;
                 case "4":                    
                     break;
+                    Main(transactions);
                 default:
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.Red;
@@ -187,7 +193,7 @@ static void Main(List<Transaction> transactions)
             }
             break;
         case "4":
-            Main(transactions);
+            SaveToFile(transactions);
             break;
         default:
             Console.WriteLine();
@@ -565,3 +571,67 @@ static void EditItem(List<Transaction> transactions, string action)
     }    
 }
 
+static void SaveToFile(List<Transaction> transactions)
+{
+    // Initiate new lists of expenses and incomes
+    List<Transaction> Expenses = new List<Transaction>();
+    List<Transaction> Incomes = new List<Transaction>();
+
+    // Divide transations into expenses and incomes
+    foreach (Transaction t in transactions)
+    {
+        if (t.GetType() == typeof(Expense))
+        {
+            // Add expense to expenses list
+            Expenses.Add(t);
+        }
+        else if (t.GetType() == typeof(Income))
+        {
+            // Add income to incomes list
+            Incomes.Add(t);
+        }
+    }
+
+    // Convert expenses and incomes to JSON
+    var expensesJSON = JsonSerializer.Serialize(Expenses);
+    var incomesJSON = JsonSerializer.Serialize(Incomes);
+
+    Console.WriteLine("EXPENSESJSON: " + expensesJSON);
+    
+    Console.WriteLine("INCOMESJSON: " + incomesJSON);
+
+    // Create expenses.txt if it does not exist
+    if (File.Exists("expenses.txt") == false)
+    {
+        File.Create("expenses.txt");
+    }
+    // Remove expenses.txt if it exists and create new file
+    else
+    {
+        File.Delete("expenses.txt");
+        File.Create("expenses.txt");
+    }
+
+    // Write expensesJSON to expenses.txt
+    File.WriteAllText("expenses.txt", expensesJSON);
+
+    // Create incomes.txt if it does not exist
+    if (File.Exists("incomes.txt") == false)
+    {
+        File.Create("incomes.txt");
+    }
+    // Remove incomes.txt if it exists and create new file
+    else
+    {
+        File.Delete("incomes.txt");
+        File.Create("incomes.txt");
+    }
+
+    // Write incomesJSON to incomes.txt
+    File.WriteAllText("incomes.txt", incomesJSON);
+
+    // Exit message to user
+    Console.ForegroundColor = ConsoleColor.DarkBlue;
+    Console.WriteLine("Your transactions have been saved. MoneyTracker will now exit.");
+    Console.ResetColor();
+}  
