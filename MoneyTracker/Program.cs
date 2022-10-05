@@ -61,10 +61,45 @@ Console.WriteLine("                   ***    Welcome to TrackMoney    ***       
 Console.ResetColor();
 Console.WriteLine();
 
+
+
 Main(transactions);
 
 static void Main(List<Transaction> transactions)
 {
+    // Check for saved transactions files
+    if (File.Exists("expenses.txt") == true || File.Exists("incomes.txt") == true)
+    {
+        // Convert JSON expenses from file to list of expenses if file exists
+        if (File.Exists("expenses.txt") == true)
+        {
+            List<Expense> savedJSONExpenses = JsonSerializer.Deserialize<List<Expense>>("expenses.txt");
+
+            // Add all incomes to transactions list
+            foreach (Expense e in savedJSONExpenses)
+            {
+                transactions.Add(e);
+            }
+        }
+
+        // Convert JSON incomes from file to list of incomes if file exists
+        if (File.Exists("incomes.txt") == true)
+        {
+            List<Income> savedJSONIncomes = JsonSerializer.Deserialize<List<Income>>("incomes.txt");
+
+            // Add all incomes to transactions list
+            foreach (Income i in savedJSONIncomes)
+            {
+                transactions.Add(i);
+            }           
+        }
+        // Alert user that saved transactions were loaded
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("Saved transactions have been loaded");
+        Console.ResetColor();
+        Console.WriteLine();
+    }
+
     // Print account balance and instructions
     Console.WriteLine("--------------------------------------------------------------------------");
     Console.WriteLine();
@@ -193,6 +228,7 @@ static void Main(List<Transaction> transactions)
             }
             break;
         case "4":
+            Console.WriteLine("Exiting program");
             SaveToFile(transactions);
             break;
         default:
@@ -571,67 +607,91 @@ static void EditItem(List<Transaction> transactions, string action)
     }    
 }
 
+// Method to save transactions to file(s)
 static void SaveToFile(List<Transaction> transactions)
 {
-    // Initiate new lists of expenses and incomes
-    List<Transaction> Expenses = new List<Transaction>();
-    List<Transaction> Incomes = new List<Transaction>();
-
-    // Divide transations into expenses and incomes
-    foreach (Transaction t in transactions)
-    {
-        if (t.GetType() == typeof(Expense))
-        {
-            // Add expense to expenses list
-            Expenses.Add(t);
-        }
-        else if (t.GetType() == typeof(Income))
-        {
-            // Add income to incomes list
-            Incomes.Add(t);
-        }
-    }
-
-    // Convert expenses and incomes to JSON
-    var expensesJSON = JsonSerializer.Serialize(Expenses);
-    var incomesJSON = JsonSerializer.Serialize(Incomes);
-
-    Console.WriteLine("EXPENSESJSON: " + expensesJSON);
+    // Ask user if they wish to save
+    Console.WriteLine("Do you wish to save transactions from this session? [Y/N]");
+    string confirm = Console.ReadLine();
     
-    Console.WriteLine("INCOMESJSON: " + incomesJSON);
-
-    // Create expenses.txt if it does not exist
-    if (File.Exists("expenses.txt") == false)
+    // Save files if user confirms
+    if (confirm == "y".ToLower().Trim() || confirm == "yes".ToLower().Trim())
     {
-        File.Create("expenses.txt");
+        // Initiate new lists of expenses and incomes
+        List<Transaction> Expenses = new List<Transaction>();
+        List<Transaction> Incomes = new List<Transaction>();
+
+        // Divide transations into expenses and incomes
+        foreach (Transaction t in transactions)
+        {
+            if (t.GetType() == typeof(Expense))
+            {
+                // Add expense to expenses list
+                Expenses.Add(t);
+            }
+            else if (t.GetType() == typeof(Income))
+            {
+                // Add income to incomes list
+                Incomes.Add(t);
+            }
+        }
+
+        // Convert expenses and incomes to JSON
+        var expensesJSON = JsonSerializer.Serialize(Expenses);
+        var incomesJSON = JsonSerializer.Serialize(Incomes);
+
+        Console.WriteLine("EXPENSESJSON: " + expensesJSON);
+
+        Console.WriteLine("INCOMESJSON: " + incomesJSON);
+
+        // Create expenses.txt if it does not exist
+        if (File.Exists("expenses.txt") == false)
+        {
+            File.Create("expenses.txt");
+        }
+        // Remove expenses.txt if it exists and create new file
+        else
+        {
+            File.Delete("expenses.txt");
+            File.Create("expenses.txt");
+        }
+
+        // Write expensesJSON to expenses.txt
+        File.WriteAllText("expenses.txt", expensesJSON);
+
+        // Create incomes.txt if it does not exist
+        if (File.Exists("incomes.txt") == false)
+        {
+            File.Create("incomes.txt");
+        }
+        // Remove incomes.txt if it exists and create new file
+        else
+        {
+            File.Delete("incomes.txt");
+            File.Create("incomes.txt");
+        }
+
+        // Write incomesJSON to incomes.txt
+        File.WriteAllText("incomes.txt", incomesJSON);
+
+        // Exit message to user
+        Console.ForegroundColor = ConsoleColor.DarkBlue;
+        Console.WriteLine("Your transactions have been saved. MoneyTracker will now exit.");
+        Console.ResetColor();
     }
-    // Remove expenses.txt if it exists and create new file
+
+    // Exit program if user types no
+    else if (confirm == "n".ToLower().Trim() || confirm == "no".ToLower().Trim())
+    {
+        
+    }
+
+    // Print error and relaunch SaveToFile method if input is not yes or no
     else
     {
-        File.Delete("expenses.txt");
-        File.Create("expenses.txt");
-    }
-
-    // Write expensesJSON to expenses.txt
-    File.WriteAllText("expenses.txt", expensesJSON);
-
-    // Create incomes.txt if it does not exist
-    if (File.Exists("incomes.txt") == false)
-    {
-        File.Create("incomes.txt");
-    }
-    // Remove incomes.txt if it exists and create new file
-    else
-    {
-        File.Delete("incomes.txt");
-        File.Create("incomes.txt");
-    }
-
-    // Write incomesJSON to incomes.txt
-    File.WriteAllText("incomes.txt", incomesJSON);
-
-    // Exit message to user
-    Console.ForegroundColor = ConsoleColor.DarkBlue;
-    Console.WriteLine("Your transactions have been saved. MoneyTracker will now exit.");
-    Console.ResetColor();
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("Wrong input, press 'Y' or 'YES' to save transactions or press 'N' or 'NO' to discard transactions.");
+        Console.ResetColor();
+        SaveToFile(transactions);
+    }    
 }  
